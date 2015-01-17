@@ -14,4 +14,4 @@ local fin = {x = args[1], y = args[2], z = args[3], dir = args[4]}
 
 print("Going to ", fin.x, ",", fin.y, ",", fin.z, ";", fin.dir)
 
-nav.gotoFull(fin)
+nav.goto(fin)
