@@ -7,7 +7,7 @@ end
 
 os.loadAPI("nav")
 
-for i,I in ipairs(args) do args[i] = tonumber(args[i]) end	-- forces all arguments to become number types
+for i,I in ipairs(args) do args[i] = tonumber(I) end	-- forces all arguments to become number types
 
 -- Final position derived from arguments
 local fin = {x = args[1], y = args[2], z = args[3], dir = args[4]}
