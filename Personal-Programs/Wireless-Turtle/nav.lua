@@ -128,6 +128,7 @@ function floodFill(b, str, fin, ref, dim)
 	
 	if b[str.z][str.x][str.y] == 1 then
 		f[str.z][str.x][str.y] = 0	-- if there's a block, make flood 0
+		return f	-- returns array of 0's
 	else
 		f[str.z][str.x][str.y] = 1	-- set the goal cell
 	end
@@ -297,7 +298,7 @@ function faceW(pos)
 	elseif pos.dir == 1 then
 		right(pos)
 		right(pos)
-	elseif posdir == 2 then
+	elseif pos.dir == 2 then
 		right(pos)
 	elseif pos.dir == 3 then
 		
@@ -393,7 +394,7 @@ end
 
 -- Goes to the coordinates (fin.x, fin.y, fin.z) using the blocks array and flood-fill
 -- (ref.x, ref.y, ref.z) is the smallest valued coordinate of the search area
-function goto(b, d, pos, fin, ref, dim)
+function moveto(b, d, pos, fin, ref, dim)
 	local f = {}	-- flood array
 	local flood = true
 	
@@ -485,6 +486,14 @@ end
 
 -- Attempts to discover turtle's gps coordinates and orientation
 function orient()
+	if gps.locate() == nil then
+		print("Waiting on GPS to become available")
+		while gps.locate() == nil do
+			sleep(1)
+		end
+		print("GPS available, process continued")
+	end
+	
 	local pos = {x = 0, y = 0, z = 0, dir = 0}	-- position initialization
 	local pos1 = {x = 0, y = 0, z = 0}
 	local pos2 = {x = 0, y = 0, z = 0}
@@ -654,12 +663,12 @@ function split(s, delim) -- coppied from <http://www.gammon.com.au/forum/?id=607
  
 end -- function split
 
-function gotoFull(fin)
-	-- Size of search area
-	local dim = {x = 15, y = 15, z = 15}
-	
+function goto(fin)
 	-- Orients the turtle, giving current coordinates and direction facing
 	local pos = nav.orient()
+	
+	-- Size of search area
+	local dim = {x = math.abs(fin.x - pos.x) + 11, y = math.abs(fin.y - pos.y) + 11, z = math.abs(fin.z - pos.z) + 11}-- {x = 15, y = 15, z = 15}
 	
 	-- Calculates where the search area should start, centering around the turtle and final positions
 	local ref = {}
@@ -670,5 +679,5 @@ function gotoFull(fin)
 	b = nav.create3DArray(dim, ref)	-- blocks array
 	d = nav.create3DArray(dim, ref)	-- discovered array (same size as blocks array)
 	
-	nav.goto(b, d, pos, fin, ref, dim)
+	nav.moveto(b, d, pos, fin, ref, dim)
 end
