@@ -119,6 +119,7 @@ end
 -- Returns the flood-fill array determined by the block array 'b'
 function floodFill(b, str, fin, ref, dim)
 	local f = {}	-- flood array
+	local blocked = false
 	
 	f = create3DArray(dim, ref)
 	
@@ -134,11 +135,16 @@ function floodFill(b, str, fin, ref, dim)
 	end
 	
 	for l = 1,dim.x*dim.y*dim.z do	-- iterates through all possible flood-fill numbers
+		
+		blocked = true
+		
 		for k = ref.z,Z do
 			for i = ref.x,X do
 				for j = ref.y,Y do
 					
 					if f[k][i][j] == l then -- if cell has flood value currently being looked at
+						
+						blocked = false	-- if there are no values for the current flood number, then this'll never be reached
 						
 						--print("Checking: ", k, " ", i, " ", j)	-- for debugging
 						
@@ -192,7 +198,14 @@ function floodFill(b, str, fin, ref, dim)
 				end
 			end
 			
-			--sleep(0)	-- causes the loop to yield after each iteration
+			-- if dim.x*dim.y*dim.z >= 20000 then
+				-- sleep(0)	-- causes the loop to yield after each iteration
+				-- print(yield)
+			-- end
+		end
+		
+		if blocked then	-- if no more paths, quit flood-fill early
+			return f
 		end
 	end
 	
@@ -416,7 +429,7 @@ function moveto(b, d, pos, fin, ref, dim)
 				elseif	fin.dir == 3 then faceW(pos)
 				end
 			end
-			return
+			return pos
 		end
 		
 		-- Checks for direction of next move based on flood values and block array
@@ -668,8 +681,8 @@ function goto(fin)
 	local pos = nav.orient()
 	
 	-- Size of search area
-	local dim = {x = math.abs(fin.x - pos.x) + 11, y = math.abs(fin.y - pos.y) + 11, z = math.abs(fin.z - pos.z) + 11}-- {x = 15, y = 15, z = 15}
-	
+	local dim = {x = math.abs(fin.x - pos.x) + 11, y = math.abs(fin.y - pos.y) + 11, z = math.abs(fin.z - pos.z) + 11}	-- {x = 15, y = 15, z = 15}
+	print(dim.x, ",", dim.y, ",", dim.z)
 	-- Calculates where the search area should start, centering around the turtle and final positions
 	local ref = {}
 	ref.x = pos.x - math.floor(math.floor((dim.x + 1)/2) - (fin.x - pos.x)/2) + 1
@@ -679,5 +692,5 @@ function goto(fin)
 	b = nav.create3DArray(dim, ref)	-- blocks array
 	d = nav.create3DArray(dim, ref)	-- discovered array (same size as blocks array)
 	
-	nav.moveto(b, d, pos, fin, ref, dim)
+	return nav.moveto(b, d, pos, fin, ref, dim)
 end
