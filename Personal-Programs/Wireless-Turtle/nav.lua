@@ -625,27 +625,23 @@ function map(b, d, x, y, z, dir, rx, ry, rz)
 	return x, y, z, dir
 end
 
-function mapBrute(b, d, x, y, z, dir, rx, ry, rz)
-	local ox, oy, oz, odir = x, y, z, dir	-- original position
-	local lyr, row, col = z - rz + 1, x - rx + 1, y - ry + 1	-- current array position
-	local valid, flyr, frow, fcol = false, lyr, row, col
+function mapBrute(b, d, pos, ref, dim)
+	local ori = {x = pos.x, y = pos.y, z = pos.z, dir = pos.dir}	-- original position
 	
-	local f = {}
-	
-	for i,I in ipairs(b) do
-		for j,J in ipairs(b[i]) do
-			for k,K in ipairs(b[i][j]) do
+	for i = ref.z,(ref.z + dim.z - 1) do
+		for j = ref.x,(ref.x + dim.x - 1) do
+			for k = ref.y,(ref.y + dim.y - 1) do
 				if d[i][j][k] ~= 1 then
-					print("Going to: ", rx + j - 1, " ", ry + k - 1, " ", rz + i - 1)
-					x, y, z, dir = goto(b, d, x, y, z, dir, rx + j - 1, ry + k - 1, rz + i - 1, nil, rx, ry, rz)
+					print("Going to: ", j, " ", k, " ", i)
+					moveto(b, d, pos, {x = j, y = k, z = i, dir = nil}, ref, dim)
 					sleep(0)
 				end
 			end
 		end
 	end
 	
-	x, y, z, dir = goto(b, d, x, y, z, dir, ox, oy, oz, odir, rx, ry, rz)
-	return x, y, z, dir
+	moveto(b, d, pos, ori, ref, dim)
+	return pos
 end
 
 function split(s, delim) -- coppied from <http://www.gammon.com.au/forum/?id=6079&reply=2#reply2>
@@ -692,5 +688,37 @@ function goto(fin)
 	b = nav.create3DArray(dim, ref)	-- blocks array
 	d = nav.create3DArray(dim, ref)	-- discovered array (same size as blocks array)
 	
-	return nav.moveto(b, d, pos, fin, ref, dim)
+	moveto(b, d, pos, fin, ref, dim)
+	mapBrute(b, d, pos, ref, dim)
+end
+
+function gotoRepeat(fin)
+	-- Orients the turtle, giving current coordinates and direction facing
+	local pos = nav.orient()
+	
+	-- Size of search area
+	local dim = {x = math.abs(fin.x - pos.x) + 11, y = math.abs(fin.y - pos.y) + 11, z = math.abs(fin.z - pos.z) + 11}	-- {x = 15, y = 15, z = 15}
+	print(dim.x, ",", dim.y, ",", dim.z)
+	-- Calculates where the search area should start, centering around the turtle and final positions
+	local ref = {}
+	ref.x = pos.x - math.floor(math.floor((dim.x + 1)/2) - (fin.x - pos.x)/2) + 1
+	ref.y = pos.y - math.floor(math.floor((dim.y + 1)/2) - (fin.y - pos.y)/2) + 1
+	ref.z = pos.z - math.floor(math.floor((dim.z + 1)/2) - (fin.z - pos.z)/2) + 1
+	
+	b = nav.create3DArray(dim, ref)	-- blocks array
+	d = nav.create3DArray(dim, ref)	-- discovered array (same size as blocks array)
+	
+	print(ref.z, ",", ref.x, ",", ref.y, "; ", ref.z + dim.z - 1, ",", ref.x + dim.x - 1, ",", ref.y + dim.y - 1)
+	
+	while true do
+		if fin.x >= ref.x and fin.x < (ref.x + dim.x) and fin.y >= ref.y and fin.y < (ref.y + dim.y) and fin.z >= ref.z and fin.z < (ref.z + dim.z) then
+			nav.moveto(b, d, pos, fin, ref, dim)
+		else
+			print("Coordinates not within search area.")
+			print("Try again.")
+		end
+		
+		input = split(io.read(), " ")
+		fin.x, fin.y, fin.z, fin.dir = tonumber(input[1]), tonumber(input[2]), tonumber(input[3]), tonumber(input[4])
+	end
 end
