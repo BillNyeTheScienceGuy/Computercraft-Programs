@@ -16,12 +16,10 @@ File Summary:
 	arguments means no specified times.  Unless
 	specified, the start and end times are set to 
 	their defaults of 8 am and 4 pm, respectively.
-	The computer must have a command block next to it
-	in order to influence the game's time.  The
-	program takes care of the commands and command
-	block positioning.
+	The computer must be a command computer	in order 
+	to influence the game's time.
 
-	Run this program in the startup file of a
+	Run this program in the startup file of a command 
 	computer to maintain time control at all times.
 
 Sample Program Call:
@@ -52,7 +50,6 @@ end
 
 local time
 local outsideRange
-local commandBlock
 
 while true do
 	time = os.time()
@@ -65,14 +62,8 @@ while true do
 	end
 	
 	if outsideRange then
-		commandBlock = peripheral.find("command")
-		if commandBlock ~= nil then
-			commandBlock.setCommand("time set " .. tostring(1000*(starttime - 6)))
-			print("Setting time...")
-			commandBlock.runCommand()
-		else
-			print("Cannot find command block.")
-		end
+		print("Setting time...")
+		commands.exec("time set " .. tostring(1000*(starttime - 6)))
 	end
 	
 	sleep(5/6)
