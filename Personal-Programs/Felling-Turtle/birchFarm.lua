@@ -1,6 +1,9 @@
 shell.run("pastebin run rNZx09j4")
 os.loadAPI("starNav")
 
+-- TODO: place chest if in inventory at beginning of program
+--       ensure saplings are always in first slot of inventory
+
 local args = { ... }
 local x, y, z
 
