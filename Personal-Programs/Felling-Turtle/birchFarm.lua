@@ -1,85 +1,20 @@
-local function forward(num)
-	if num == nil then	-- if no input, default is to move forward once
-		num = 1
-	end
-	
-	for i = 1,num do
-		while not turtle.forward() do	-- if turtle not moving forward...
-			if turtle.detect() then	-- dig if there's a block...
-				turtle.dig()
-			else	-- or attack if there's no block
-				turtle.attack()
-			end
-		end
-	end
+shell.run("pastebin run rNZx09j4")
+os.loadAPI("starNav")
+
+local args = { ... }
+local x, y, z
+
+if #args == 3 then
+	x,y,z = tonumber(args[1]), tonumber(args[2]), tonumber(args[3])
+else
+	print("Invalid arguments (must be coordinates)")
 end
 
-local function back(num)
-	if num == nil then	-- if no input, default is to move back once
-		num = 1
-	end
-	
-	for i = 1,num do
-		while not turtle.back() do	-- if turtle not moving back...
-			turtle.turnRight()	-- turn around
-			turtle.turnRight()
-			if turtle.detect() then	-- dig if there's a block...
-				turtle.dig()
-			else	-- or attack if there's no block
-				turtle.attack()
-			end
-			turtle.turnRight()	-- turn around
-			turtle.turnRight()
-		end
-	end
-end
+local function locateTreeBase()
+	local p = {starNav.getPosition()}
+	local heading = p[4]
+	local original = p[4]
 
-local function up(num)
-	if num == nil then	-- if no input, default is to move up once
-		num = 1
-	end
-	
-	for i = 1,num do
-		while not turtle.up() do	-- if turtle not moving up...
-			if turtle.detectUp() then	-- dig if there's a block...
-				turtle.digUp()
-			else	-- or attack if there's no block
-				turtle.attackUp()
-			end
-		end
-	end
-end
-
-local function down(num)
-	if num == nil then	-- if no input, default is to move down once
-		num = 1
-	end
-	
-	for i = 1,num do
-		while not turtle.down() do	-- if turtle not moving down...
-			if turtle.detectDown() then	-- dig if there's a block...
-				turtle.digDown()
-			else	-- or attack if there's no block
-				turtle.attackDown()
-			end
-		end
-	end
-end
-
-local function redstoneInputs()
-	if redstone.getInput("front") then
-		return "front"
-	elseif redstone.getInput("right") then
-		return "right"
-	elseif redstone.getInput("left") then
-		return "left"
-	elseif redstone.getInput("back") then
-		return "back"
-	end
-	return false
-end
-
-local function turnUntilTree()
 	local isBlock,block = turtle.inspect()
 	while not isBlock or string.match(string.match(block.name, ':.*'), '[^:].*') ~= "log" do
 		if not isBlock then
@@ -87,140 +22,141 @@ local function turnUntilTree()
 			turtle.place()
 		end
 		turtle.turnRight()
+		heading = (heading + 1)%4
 		isBlock,block = turtle.inspect()
 		sleep(0)
 	end
+	
+	local a = aStar.adjacent(vector.new(unpack(p)))
+	local base = a[heading + 1]
+	local baseHeading = heading
+
+	while heading ~= original do
+		turtle.turnRight()
+		heading = (heading + 1)%4
+		sleep(0)
+	end
+	
+	return base, baseHeading
 end
 
 local function blockGrowth()
-	up()
+	starNav.goto(x, y + 1, z)
 	turtle.select(2)
-	for i = 1,3 do
+	for i = 1,4 do
 		turtle.turnRight()
 		turtle.place()
 	end
-	turtle.turnRight()
-	down()
+	starNav.goto(x, y, z)
 	turtle.select(1)
 end
 
 local function resumeGrowth()
-	up()
+	starNav.goto(x, y + 1, z)
 	turtle.select(2)
-	for i = 1,3 do
+	for i = 1,4 do
 		turtle.turnRight()
 		turtle.dig()
 	end
-	turtle.turnRight()
-	down()
+	starNav.goto(x, y, z)
 	turtle.select(1)
 end
 
-local function treeCuttingMovements()
-	local count = 0
-	while not turtle.detectUp() do
-		up()
-		count = count + 1
-	end
-	while turtle.detectUp() do
-		up()
-		count = count + 1
+local function treeCuttingMovements(treeCount, base)
+	-- Go through tree to right above it
+	for i = 1, 7 do
+		turtle.digUp()
+		starNav.goto(x, y + i, z)
 	end
 	
-	forward()
-	
-	-- Top Layer
-	turtle.dig()
-	turtle.turnRight()
-	turtle.dig()
-	turtle.turnRight()
-	turtle.dig()
-	turtle.turnRight()
-	forward()
-	turtle.turnRight()
-	
-	-- Next Layer Down
-	count = count - 1
-	down()
-	forward()
-	turtle.turnRight()
-	forward(2)
-	turtle.turnRight()
-	forward(2)
-	turtle.turnRight()
-	forward(2)
-	turtle.turnRight()
-	
-	-- Next Layer Down
-	count = count - 1
-	down()
-	forward(2)
-	turtle.turnRight()
-	forward(2)
-	turtle.turnRight()
-	forward(2)
-	turtle.turnRight()
-	forward(3)
-	turtle.turnRight()
-	forward(3)
-	turtle.turnRight()
-	forward(4)
-	turtle.turnRight()
-	forward(4)
-	turtle.turnRight()
-	forward(4)
-	turtle.turnRight()
-	
-	-- Next Layer Down
-	count = count - 1
-	down()
-	forward(4)
-	turtle.turnRight()
-	forward(4)
-	turtle.turnRight()
-	forward(4)
-	turtle.turnRight()
-	forward(3)
-	turtle.turnRight()
-	forward(3)
-	turtle.turnRight()
-	forward(2)
-	turtle.turnRight()
-	forward(2)
-	turtle.turnRight()
-	forward()
-	turtle.turnRight()
-	
-	-- Go back down to ground
-	forward()
-	while turtle.detectUp() do
-		up()
-		count = count + 1
+	-- Go down to top of tree
+	local topLayer
+	for i = 8, 0, -1 do
+		if not starNav.goto(base.x, base.y + i, base.z) then
+			topLayer = base.y + i + 1
+			break
+		end
 	end
-	for i = 1,count do
-		down()
-	end
-	back()
 	
-	-- Dump everything except saplings in first slot and first stack of wood into chest
-	for i = 2,16 do
-		turtle.select(i)
-		turtle.dropDown()
+	-- Chop down large layers
+	local topTrunkY = base.y + 3
+	local woodCount = 0
+	for y = topLayer, base.y + 3, -1 do
+		for z = base.z - 2, base.z + 2 do
+			starNav.goto(base.x - 2, y, z)
+			turtle.digDown()
+		end
+		for x = base.x - 1, base.x + 2 do
+			starNav.goto(x, y, base.z + 2)
+			turtle.digDown()
+		end
+		for z = base.z + 1, base.z - 2, -1 do
+			starNav.goto(base.x + 2, y, z)
+			turtle.digDown()
+		end
+		for x = base.x + 1, base.x - 1, -1 do
+			starNav.goto(x, y, base.z - 2)
+			turtle.digDown()
+		end
+		
+		for z = base.z - 1, base.z + 1 do
+			starNav.goto(base.x - 1, y, z)
+			turtle.digDown()
+		end
+		for x = base.x, base.x + 1 do
+			starNav.goto(x, y, base.z + 1)
+			turtle.digDown()
+		end
+		for z = base.z, base.z - 1, -1 do
+			starNav.goto(base.x + 1, y, z)
+			turtle.digDown()
+		end
+		starNav.goto(base.x, y, base.z - 1)
+		turtle.digDown()
+		
+		starNav.goto(base.x, y, base.z)
+		topTrunkY = y
+		local isBlock, block = turtle.inspectDown()
+		if isBlock and string.match(string.match(block.name, ':.*'), '[^:].*') == "log" then
+			woodCount = woodCount + 1
+		end
+		turtle.digDown()
+		if woodCount >= 3 then
+			break
+		end
 	end
-	turtle.select(1)
+	
+	-- Chop down rest of trunk
+	for y = topTrunkY - 1, base.y + 1, -1 do
+		starNav.goto(base.x, y, base.z)
+		turtle.digDown()
+	end
+	
+	starNav.goto(x, y, z)
+	local isBlock,block = turtle.inspectDown()
+	if isBlock and string.match(string.match(block.name, ':.*'), '[^:].*') == "chest" then
+		-- Dump everything except saplings in first slot and first stack of wood (only on first tree down) into chest
+		local startSlot = 2
+		if treeCount == 0 then startSlot = 3 end
+		for i = startSlot,16 do
+			turtle.select(i)
+			turtle.dropDown()
+		end
+		turtle.select(1)
+	end
 end
 
 local treeCount = 0
-local side = "front"
+starNav.setMap(tostring("treeFarmerMap"))
 
 while true do
-	turtle.place()
+	starNav.goto(x, y, z)
 	
-	turnUntilTree()
+	local base, baseHeading = locateTreeBase()
 	
 	blockGrowth()
 	
-	treeCuttingMovements()
+	treeCuttingMovements(treeCount, base)
 	
 	resumeGrowth()
 	
